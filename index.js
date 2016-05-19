@@ -939,9 +939,9 @@ Command.prototype.optionHelp = function() {
   // Prepend the help information
   return [pad('-h, --help', width) + '  ' + 'output usage information']
       .concat(this.options.map(function(option, index) {
-        let optionRes = pad(option.flags, width) + '  ' + option.description;
+        var optionRes = pad(option.flags, width) + '  ' + option.description;
         var separator = self.findOptionSeparator(index);
-        let res = '';
+        var res = '';
         if (separator) {
           res += '------------------------------- ' + separator.title + ' -------------------------------\r\n';
         }
