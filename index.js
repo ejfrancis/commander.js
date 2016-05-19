@@ -47,6 +47,11 @@ function Option(flags, description) {
   this.description = description || '';
 }
 
+function OptionSeparator(index, title) {
+  this.index = index;
+  this.title = title;
+}
+
 /**
  * Return option name.
  *
@@ -82,6 +87,7 @@ Option.prototype.is = function(arg) {
 function Command(name) {
   this.commands = [];
   this.options = [];
+  this.optionSeparators = [];
   this._execs = {};
   this._allowUnknownOption = false;
   this._args = [];
@@ -369,7 +375,7 @@ Command.prototype.option = function(flags, description, fn, defaultValue) {
       fn = function(val, def) {
         var m = regex.exec(val);
         return m ? m[0] : def;
-      }
+      };
     }
     else {
       defaultValue = fn;
@@ -414,6 +420,11 @@ Command.prototype.option = function(flags, description, fn, defaultValue) {
 
   return this;
 };
+
+Command.prototype.optionSeparator = function(title) {
+  this.optionSeparators.push(new OptionSeparator(this.options.length, title));
+  return this;
+}
 
 /**
  * Allow unknown options on the command line.
@@ -903,6 +914,16 @@ Command.prototype.largestOptionLength = function() {
   }, 0);
 };
 
+
+Command.prototype.findOptionSeparator = function(index) {
+  for (var i = 0; i < this.optionSeparators.length; i++) {
+    if (this.optionSeparators[i].index === index) {
+      return this.optionSeparators[i];
+    }
+  }
+  return null;
+}
+
 /**
  * Return help for options.
  *
@@ -913,10 +934,19 @@ Command.prototype.largestOptionLength = function() {
 Command.prototype.optionHelp = function() {
   var width = this.largestOptionLength();
 
+  var self = this;
+
   // Prepend the help information
   return [pad('-h, --help', width) + '  ' + 'output usage information']
-      .concat(this.options.map(function(option) {
-        return pad(option.flags, width) + '  ' + option.description;
+      .concat(this.options.map(function(option, index) {
+        let optionRes = pad(option.flags, width) + '  ' + option.description;
+        var separator = self.findOptionSeparator(index);
+        let res = '';
+        if (separator) {
+          res += '------------------------------- ' + separator.title + ' -------------------------------\r\n';
+        }
+        res += optionRes;
+        return res;
       }))
       .join('\n');
 };
@@ -1018,7 +1048,7 @@ Command.prototype.outputHelp = function(cb) {
   if (!cb) {
     cb = function(passthru) {
       return passthru;
-    }
+    };
   }
   process.stdout.write(cb(this.helpInformation()));
   this.emit('--help');
